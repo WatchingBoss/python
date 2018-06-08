@@ -1,7 +1,6 @@
-import socket
-from io import StringIO
-import sys
 import io
+import socket
+import sys
 
 class wsgiServer(object):
     addressFamily = socket.AF_INET
@@ -10,7 +9,7 @@ class wsgiServer(object):
 
     def __init__(self, serverAddress):
         # Create a listenin socket
-        self.lSocket = lSocket = socket.socket(self.addressFamilt, self.socketType)
+        self.lSocket = lSocket = socket.socket(self.addressFamily, self.socketType)
         # Allow to reuse the same address
         lSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Bind
@@ -18,9 +17,10 @@ class wsgiServer(object):
         # Activate
         lSocket.listen(self.requestQueueSize)
         # Get server host name and post
-        host, port = self.lSocket.getsockname()[:2]
+        host, port = "127.0.0.1", 12000 #self.lSocket.getsockname()[:2]
         self.serverName = socket.getfqdn(host)
         self.serverPort = port
+        print ("\n{0};\n{1};\n{2};\n{3};\n".format(host, port, self.serverName, self.serverPort))
         # Return headers set by Web framework/app
         self.headersSet = []
 
@@ -43,7 +43,7 @@ class wsgiServer(object):
                        for line in requestData.splitlines()))
         self.parse_request(requestData)
         # Construct environment dictionary using request data
-        environment = self.get_environ()
+        environment = self.get_environment()
         # Call app and return result aka HTTP response body
         result = self.app(environment, self.start_response)
         # Construct and send the response
@@ -51,7 +51,7 @@ class wsgiServer(object):
 
     def parse_request(self, text):
         requestLine = text.splitlines()[0]
-        requestLine = requestLine.rstrip('\r\n')
+        requestLine = requestLine.rstrip('\r\n'.encode())
         # Break down the request into lines
         (self.requestMethod, self.path, self.requestVersion) = requestLine.split()
 
@@ -61,7 +61,7 @@ class wsgiServer(object):
         # Requires WSGI vars
         environment['wsgi.version'] = (1, 0)
         environment['wsgi.url_scheme'] = "http"
-        environment['wsgi.input'] = StringIO.StringIO(self.requestData)
+        environment['wsgi.input'] = io.BytesIO(self.requestData)
         environment['wsgi.errors'] = sys.stderr
         environment['wsgi.multithread'] = False
         environment['wsgi.multiprocess'] = False
@@ -70,7 +70,7 @@ class wsgiServer(object):
         environment['wsgi.REQUEST_METHOD'] = self.requestMethod
         environment['wsgi.PATH_INFO'] = self.path
         environment['wsgi.SERVER_NAME'] = self.serverName
-        environment['wsgi.SERVER_PORT'] = str(setverPort)
+        environment['wsgi.SERVER_PORT'] = str(self.serverPort)
 
         return environment
 
@@ -105,12 +105,12 @@ def make_server(serverAddress, app):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Provide object as module:callable")
-        appPath = sys.argv[1]
-        module, app = appPath.split(":")
-        module = __import__(module)
-        app = getattr(module, app)
-        httpd = make_server(SERVER_ADDRESS, app)
-
-        print("wsgiServer: HTTP on port {port}\n".format(port=PORT))
-        httpd.server_work()
+    appPath = sys.argv[1]
+    module, app = appPath.split(":")
+    module = __import__(module)
+    app = getattr(module, app)
+    httpd = make_server(SERVER_ADDRESS, app)
+    
+    print("wsgiServer: HTTP on port {port}\n".format(port=PORT))
+    httpd.server_work()
 
