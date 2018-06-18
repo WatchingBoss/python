@@ -14,7 +14,7 @@ def checkSum(str):
     countTo = (len(str)) - (len(str) % 2)
 
     while count < countTo:
-        thisVal = ord(str[count + 1]) * 256 + ord(str[count])
+        thisVal = str[count + 1] * 256 + str[count]
         csum = csum + thisVal
         csum = csum & 0xffffffff
         count += 2
@@ -58,17 +58,13 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 def sendOnePing(mySocket, destAddr, ID):
     myCheckSum = 0
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myCheckSum, ID, 1)
-    data = struct.pack("d", time.time())
+    bytes_In_double = struct.calcsize("d")
+    data = (192 - bytes_In_double) * "Q"
+    data = struct.pack("d", time.time()) + bytes(data.encode('utf-8'))
+
     myCheckSum = checkSum(header + data)
 
-    # Get the right checksum and put in the header
-    if sys.playform == 'darwin':
-        myCheckSum = htons(myCheckSum) & 0xffff
-        # Convert 16-bit int form host to network byte order
-    else:
-        myCheckSum = htons(myCheckSum)
-
-    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myCheckSUm, ID, 1)
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, socket.htons(myCheckSum), ID, 1)
     packet = header + data
 
     mySocket.sendto(packet, (destAddr, 1))
