@@ -72,7 +72,7 @@ def checkUserPassword():
         if v.FINAL:
             break
         else:
-            print("Try agen")
+            print("Enter another password")
 
 
 if __name__ == "__main__":
