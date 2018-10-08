@@ -1,0 +1,32 @@
+body{
+	font-family: Schoolbook Uralic;
+}
+
+li, p{
+	font-size: 18px;
+}
+
+.mainCon{
+	padding: 0% 5%;
+}
+
+.posts{
+	padding: 1px 20px;
+	background-color: #bcfff9;
+}
+
+.posts > h2{
+	text-align: center;
+}
+
+h1{
+	font-size: 30px;
+}
+
+h2{
+	font-size: 27px;
+}
+
+h3{
+	font-size: 24px;
+}

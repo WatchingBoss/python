@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta charset="UTF-8"/>
+
+	{%if title%}
+	  <title>{{title}} flask blog</title>
+	{%else%}
+	  <title>flask blog</title>
+	{%endif%}
+
+	<link href="{{url_for('static', filename='style.css')}}" rel="stylesheet"/>
+  </head>
+  <body>
+	<header class="header">
+	  
+	</header>
+	<div class="mainCon">
+	  {%block content%}{%endblock%}
+	</div>
+  </body>
+</html>
