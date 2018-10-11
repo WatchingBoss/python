@@ -10,13 +10,27 @@ li, p{
 	padding: 0% 5%;
 }
 
+.mainBody{
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+}
+
 .posts{
+	
 	padding: 1px 20px;
 	background-color: #bcfff9;
+	flex-basis: 75%;
 }
 
 .posts > h2{
 	text-align: center;
+}
+
+.right{
+	text-align: center;
+	background-color: yellow;
+	flex-basis: 25%;
 }
 
 h1{
@@ -29,4 +43,23 @@ h2{
 
 h3{
 	font-size: 24px;
+}
+
+.header{
+	background-color: #222;
+	overflow: hidden;
+}
+
+.header a{
+	float: left;
+	color: #eee;
+	text-align: center;
+	padding: 15px 30px;
+	font-size: 18px;
+	text-decoration: none;
+}
+
+.header a:hover{
+	background-color: #888;
+	color: #000;
 }

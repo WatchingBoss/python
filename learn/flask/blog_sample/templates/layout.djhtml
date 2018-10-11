@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
   <head>
 	<meta charset="UTF-8"/>
 
@@ -11,12 +12,18 @@
 
 	<link href="{{url_for('static', filename='style.css')}}" rel="stylesheet"/>
   </head>
+
+
   <body>
-	<header class="header">
-	  
-	</header>
+	<div class="mainCon">
+	  <header class="header">
+		<a href="#home">Home</a>
+		<a href="#about">About</a>
+	  </header>
+	</div>
 	<div class="mainCon">
 	  {%block content%}{%endblock%}
 	</div>
   </body>
+
 </html>

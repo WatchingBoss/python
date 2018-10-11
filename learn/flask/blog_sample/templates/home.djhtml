@@ -1,22 +1,17 @@
 {%extends "layout.djhtml"%}
 {%block content%}
   <h1>This is my home page</h1>
-  <h2>Some list is here</h2>
-  <ol>
-	<li>Potato</li>
-	<li>Tomato</li>
-	<li>Cucumber</li>
-  </ol>
-
-  <div class="posts">
-	<h2>Like a blog</h2>
-	{% for p in posts %}
-	  <h3>{{ p.header }}</h3>
-	  <p>{{ p.first }}</p>
-	  <p>{{ p.second }}</p>
-	{% endfor %}
+  <div class="mainBody">
+	<div class="posts">
+	  <h2>Like a blog</h2>
+	  {% for p in posts %}
+		<h3>{{ p.header }}</h3>
+		<p>{{ p.first }}</p>
+		<p>{{ p.second }}</p>
+	  {% endfor %}
+	</div>
+	<div class="right">
+	  <h2>Something is here</h2>
+	</div>
   </div>
-
-  <h2>You can go to about page</h2>
-  <a href="./about.html">About page</a>
 {%endblock content%}
