@@ -1,55 +1,64 @@
 import shelve
 from random import randint
-
-# TODO Add GUI
+import PySimpleGUI as gui
 
 # TODO Show random word from list of exact topic or from all lists
+# TODO Another class for window
+# TODO Use Dictionary class's data by Window class
+
+
+def define_layout():
+    layout = [
+        [gui.Output(size=(50, 25), key="-Output-", font="12px")],
+        [gui.Button("Add new word"), gui.Input(key="-InputNewWord-")],
+        [gui.Button("Random word"), gui.Button("All words"), gui.Button("Exit")]
+    ]
+    return layout
 
 
 class Dictionary:
     FILE_PATH = "./data/dict"
 
     def __init__(self, key):
+        self.window = gui.Window("Memorize words", define_layout())
         self.key = key
         self.words = []
         self.check_key_existence()
         self.menu()
 
     def print_random_word(self):
-        print(self.words[(randint(0, len(self.words) - 1))])
+        print("\n Random word: {}".format(self.words[(randint(0, len(self.words) - 1))]))
 
-    def add_new_word(self):
-        self.words.append(input("Enter new word: "))
+    def add_new_word(self, new_word):
+        self.words.append(new_word)
+        self.window["-InputNewWord-"]("")
+        print("\nAdded new word in dictionary:\n\t{}".format(new_word))
 
     def list_words(self):
+        self.window["-Output-"]("")
         for i in range(len(self.words)):
             print("{}: {}".format(i + 1, self.words[i]))
 
     def menu(self):
         while True:
-            print("""Choose next option:
-            1. Show random word from dictionary
-            2. Add new word to dictionary
-            3. List all word in dictionary
-            4. Exit""")
-            option = int(input("Enter chose: "))
-            if option == 1:
+            event, values = self.window.read()
+            if event in (None, "Random word"):
                 self.print_random_word()
-            elif option == 2:
-                self.add_new_word()
-            elif option == 3:
+            elif event in (None, "Add new word"):
+                self.add_new_word(values["-InputNewWord-"])
+            elif event in (None, "All words"):
                 self.list_words()
-            elif option == 4:
+            elif event in (None, "Exit"):
                 with shelve.open(Dictionary.FILE_PATH) as file:
                     file[self.key] = self.words
                 break
-            else:
-                continue
+
+        self.window.close()
 
     def check_key_existence(self):
         with shelve.open(Dictionary.FILE_PATH) as file:
             if self.key in file:
-                words = file[self.key]
+                self.words = file[self.key]
             else:
                 self.words.append(input("Enter your first word to store in dictionary: "))
 
