@@ -11,7 +11,8 @@ def define_layout():
     layout = [
         [gui.Output(size=(50, 25), key="-Output-", font="12px")],
         [gui.Button("Add new word"), gui.Input(key="-InputNewWord-")],
-        [gui.Button("Random word"), gui.Button("All words"), gui.Button("Exit")]
+        [gui.Button("Random word"), gui.Button("All words"),
+         gui.Button("Clean the list"), gui.Button("Exit")]
     ]
     return layout
 
@@ -20,24 +21,39 @@ class Dictionary:
     FILE_PATH = "./data/dict"
 
     def __init__(self, key):
-        self.window = gui.Window("Memorize words", define_layout())
         self.key = key
+        self.window = gui.Window("Memorize words", define_layout())
         self.words = []
-        self.check_key_existence()
+        with shelve.open(Dictionary.FILE_PATH) as file:
+            self.words = file[key]
         self.menu()
 
     def print_random_word(self):
+        if not self.words:
+            self.window["-Output-"]("This list is empty. Add new word.")
+            return
         print("\n Random word: {}".format(self.words[(randint(0, len(self.words) - 1))]))
 
     def add_new_word(self, new_word):
+        if not new_word:
+            self.window["-Output-"]("Empty input.")
+            return
         self.words.append(new_word)
         self.window["-InputNewWord-"]("")
         print("\nAdded new word in dictionary:\n\t{}".format(new_word))
 
     def list_words(self):
+        if not self.words:
+            self.window["-Output-"]("This list is empty. Add new word.")
+            return
         self.window["-Output-"]("")
         for i in range(len(self.words)):
             print("{}: {}".format(i + 1, self.words[i]))
+
+    def clear_list(self):
+        self.words.clear()
+        self.window["-Output-"]("The list is empty now.\n"
+                                "You can add new word")
 
     def menu(self):
         while True:
@@ -48,6 +64,8 @@ class Dictionary:
                 self.add_new_word(values["-InputNewWord-"])
             elif event in (None, "All words"):
                 self.list_words()
+            elif event in (None, "Clean the list"):
+                self.clear_list()
             elif event in (None, "Exit"):
                 with shelve.open(Dictionary.FILE_PATH) as file:
                     file[self.key] = self.words
@@ -55,15 +73,8 @@ class Dictionary:
 
         self.window.close()
 
-    def check_key_existence(self):
-        with shelve.open(Dictionary.FILE_PATH) as file:
-            if self.key in file:
-                self.words = file[self.key]
-            else:
-                self.words.append(input("Enter your first word to store in dictionary: "))
-
 
 # TODO Make chose between topics and add them to different keys
 # TODO Key is topic
 if __name__ == "__main__":
-    main_dictionary = Dictionary("dict_1")
+    main_dictionary = Dictionary("dict_2")
