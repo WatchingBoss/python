@@ -83,6 +83,12 @@ def add_short_info(sheets_list, stocks_dict):
                     row.append(False)
 
 
+def check_hash(s):
+    if s == '-':
+        return 0
+    return float(s)
+
+
 def get_finviz_info(rows):
     for row in rows:
         if not row[2]:
@@ -97,16 +103,24 @@ def get_finviz_info(rows):
         mult = {snapshot_td2_cp[i].text.lower(): snapshot_td2[i].text.lower()
                 for i in range(len(snapshot_td2))}
 
-        row.append(mult['atr'])
-        row.append(mult['beta'])
-        row.append(mult['price'])
-        row.append(mult['avg volume'])
+        row.append(check_hash(mult['atr']))
+        row.append(check_hash(mult['beta']))
+        row.append(check_hash(mult['price']))
+        avg = mult['avg volume']
+        if avg[-1] == 'm':
+            avg = float(avg[0:-1]) * 1_000_000
+        elif avg[-1] == 'k':
+            avg = float(avg[0:-1]) * 1_000
+        else:
+            avg = float(avg[0:-1])
+        row.append(avg)
 
 
 def add_finviz_info(sheets_list):
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         for sheet in sheets_list:
             executor.submit(get_finviz_info, sheet.rows)
+    # get_finviz_info(sheets_list[0].rows)
 
 
 def write_sheet(sheets_list, f_path):
