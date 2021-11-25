@@ -24,11 +24,20 @@ class Sheet:
         self.rows = []
 
 
-def get_market_stocks(client, stocks_dict):
+class Spb_Sheet:
+    def __init__(self, name):
+        self.name = name
+        self.title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
+        self.rows = []
+
+
+def get_market_stocks(client):
     payload = client.get_market_stocks().payload
     stocks_usd = [stock for stock in payload.instruments[:] if stock.currency == 'USD']
+    stocks = {}
     for s in stocks_usd:
-        stocks_dict[s.ticker] = Stock(s.ticker, s.isin)
+        stocks[s.ticker] = Stock(s.ticker, s.isin)
+    return stocks
 
 
 def get_data(stocks_dict, f_path, sheets_list):
@@ -89,19 +98,37 @@ def check_hash(s):
     return float(s)
 
 
+def get_soup(url):
+    r = requests.get(url, headers=HEADER)
+    return BeautifulSoup(r.content, 'lxml')
+
+
+def get_finviz_table(soup: BeautifulSoup):
+    table_mult = soup.find('table', class_='snapshot-table2')
+    snapshot_td2_cp = table_mult.find_all('td', class_='snapshot-td2-cp')
+    snapshot_td2 = table_mult.find_all('td', class_='snapshot-td2')
+    mult = {snapshot_td2_cp[i].text.lower(): snapshot_td2[i].text.lower()
+            for i in range(len(snapshot_td2))}
+    return mult
+
+
+def get_finviz_info_spb(ticker):
+    soup = get_soup(f"https://finviz.com/quote.ashx?t={ticker}")
+    mult = get_finviz_table(soup)
+    title = soup.find('table', class_="fullview-title")
+    all_tr = title.find_all(class_='tab-link')
+    name = all_tr[0].text
+    sector = all_tr[1].text
+    industry = all_tr[2].text
+
+
 def get_finviz_info(rows):
     for row in rows:
         if not row[2]:
             continue
-        url = f"https://finviz.com/quote.ashx?t={row[0]}"
-        r = requests.get(url, headers=HEADER)
-        soup = BeautifulSoup(r.content, 'lxml')
 
-        table_mult = soup.find('table', class_='snapshot-table2')
-        snapshot_td2_cp = table_mult.find_all('td', class_='snapshot-td2-cp')
-        snapshot_td2 = table_mult.find_all('td', class_='snapshot-td2')
-        mult = {snapshot_td2_cp[i].text.lower(): snapshot_td2[i].text.lower()
-                for i in range(len(snapshot_td2))}
+        soup = get_soup(f"https://finviz.com/quote.ashx?t={row[0]}")
+        mult = get_finviz_table(soup)
 
         row.append(check_hash(mult['atr']))
         row.append(check_hash(mult['beta']))
@@ -145,22 +172,33 @@ def write_sheet(sheets_list, f_path):
     wb.save(f_path)
 
 
-def main():
+def get_stocks():
     with open(os.path.join(os.path.expanduser('~'), 'no_commit', 'info.json')) as f:
         data = json.load(f)
-        key = data['token_tinkoff_real']
-    client = tin.SyncClient(key)
+    client = tin.SyncClient(data['token_tinkoff_real'])
+    return get_market_stocks(client)
 
-    all_stocks = {}
+
+def etf_stocks():
+    all_stocks = get_stocks()
     my_sheets = []
 
-    get_market_stocks(client, all_stocks)
     get_data(all_stocks, "etfs.xlsx", my_sheets)
     
     add_short_info(my_sheets, all_stocks)
     add_finviz_info(my_sheets)
 
     write_sheet(my_sheets, "etfs_holdings.xlsx")
+
+
+def spb_stocks():
+    stocks = get_stocks()
+    get_finviz_info_spb(stocks['CNK'].ticker)
+
+
+def main():
+    # etf_stocks()
+    spb_stocks()
 
 
 if __name__ == '__main__':
