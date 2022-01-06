@@ -12,31 +12,32 @@ HEADER = {'User-Agent': str(UserAgent().chrome)}
 
 
 class Stock:
-    def __init__(self, ticker, isin):
+    def __init__(self, ticker, isin='blank'):
         self.ticker = ticker
         self.isin = isin
+        self.short = False
+        self.risk = [100, 100]
+        self.atr = 1
+        self.price = 1
+        self.beta = 1
+        self.atr_to_price = 1
+        self.sector = ''
+        self.industry = ''
+        self.avg_volume = 1
 
 
 class Sheet:
-    def __init__(self, name):
+    def __init__(self, name='default'):
         self.name = name
-        self.title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
-        self.rows = []
-
-
-class Spb_Sheet:
-    def __init__(self, name):
-        self.name = name
-        self.title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
+        self.etf_title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
+        self.spb_title = ['Ticker', 'Name', 'Sector', 'Industry', 'Country']
         self.rows = []
 
 
 def get_market_stocks(client):
     payload = client.get_market_stocks().payload
     stocks_usd = [stock for stock in payload.instruments[:] if stock.currency == 'USD']
-    stocks = {}
-    for s in stocks_usd:
-        stocks[s.ticker] = Stock(s.ticker, s.isin)
+    stocks = {s.ticker: Stock(ticker=s.ticker, isin=s.isin) for s in stocks_usd}
     return stocks
 
 
@@ -57,13 +58,41 @@ def get_data(stocks_dict, f_path, sheets_list):
         sheets_list.append(sheet)
 
 
-def show_sheets(sheets_list):
-    for sheet in sheets_list:
-        print(sheet.name)
-        print(sheet.title)
-        for row in sheet.rows:
-            print(row)
-        print('\n')
+class Liquidity:
+    def __init__(self, short_able, risk_long, risk_short):
+        self.short_able = short_able
+        self.risk_long = risk_long
+        self.risk_short = risk_short
+
+
+def check_liquidity(stocks):
+    url = "https://www.tinkoff.ru/invest/margin/equities/"
+    r = requests.get(url, headers=HEADER)
+    soup = BeautifulSoup(r.content, 'lxml')
+
+    liquidity = {}
+
+    body_table = soup.find('table').find('tbody')
+    trs = body_table.find_all('tr')
+    for tr in trs:
+        tds = tr.find_all('td')
+        isin = tds[1].text
+        if tds[2].text == "Доступен":
+            short_able = True
+        else:
+            short_able = False
+        risk_long = float(tds[3].text.split('/')[0])
+        risk_short = float(tds[3].text.split('/')[1])
+
+        liquidity[isin] = Liquidity(short_able, risk_long, risk_short)
+
+    for s in stocks:
+        try:
+            l = liquidity[s.isin]
+            s.short = l.short_able
+            s.risk = [l.risk_long, l.risk_short]
+        except KeyError:
+            continue
 
 
 def add_short_info(sheets_list, stocks_dict):
@@ -114,12 +143,40 @@ def get_finviz_table(soup: BeautifulSoup):
 
 def get_finviz_info_spb(ticker):
     soup = get_soup(f"https://finviz.com/quote.ashx?t={ticker}")
-    mult = get_finviz_table(soup)
     title = soup.find('table', class_="fullview-title")
-    all_tr = title.find_all(class_='tab-link')
-    name = all_tr[0].text
-    sector = all_tr[1].text
-    industry = all_tr[2].text
+    try:
+        all_links = title.find_all(class_='tab-link')
+        name = all_links[0].text
+        sector = all_links[1].text
+        industry = all_links[2].text
+        country = all_links[3].text
+        return [ticker, name, sector, industry, country]
+    except:
+        return [ticker, 0, 0, 0, 0]
+
+
+def get_avg_volume(avg):
+    if avg[-1] == 'm':
+        avg = float(avg[0:-1]) * 1_000_000
+    elif avg[-1] == 'k':
+        avg = float(avg[0:-1]) * 1_000
+    else:
+        avg = float(avg[0:-1])
+    return avg
+
+
+def stock_finviz_info(stock: Stock):
+    soup = get_soup(f"https://finviz.com/quote.ashx?t={stock.ticker}")
+    mult = get_finviz_table(soup)
+    stock.atr = check_hash(mult['atr'])
+    stock.price = check_hash(mult['price'])
+    stock.beta = check_hash(mult['beta'])
+    stock.atr_to_price = stock.atr / stock.price
+    stock.avg_volume = get_avg_volume(mult['avg volume'])
+
+    links = soup.find('table', class_='fullview-title').find_all(class_='tab-link')
+    stock.sector = links[1].text
+    stock.industry = links[2].text
 
 
 def get_finviz_info(rows):
@@ -133,14 +190,7 @@ def get_finviz_info(rows):
         row.append(check_hash(mult['atr']))
         row.append(check_hash(mult['beta']))
         row.append(check_hash(mult['price']))
-        avg = mult['avg volume']
-        if avg[-1] == 'm':
-            avg = float(avg[0:-1]) * 1_000_000
-        elif avg[-1] == 'k':
-            avg = float(avg[0:-1]) * 1_000
-        else:
-            avg = float(avg[0:-1])
-        row.append(avg)
+        row.append(get_avg_volume(mult['avg volume']))
 
 
 def add_finviz_info(sheets_list):
@@ -150,7 +200,7 @@ def add_finviz_info(sheets_list):
     # get_finviz_info(sheets_list[0].rows)
 
 
-def write_sheet(sheets_list, f_path):
+def write_sheet_etf(sheets_list, f_path):
     wb = Workbook()
     ws = wb.active
     ws.title = sheets_list[0].name
@@ -159,7 +209,7 @@ def write_sheet(sheets_list, f_path):
         if i != 0:
             ws = wb.create_sheet(sheets_list[i].name)
 
-        title = sheets_list[i].title
+        title = sheets_list[i].etf_title
         rows = sheets_list[i].rows
 
         for cal in range(len(title)):
@@ -188,17 +238,60 @@ def etf_stocks():
     add_short_info(my_sheets, all_stocks)
     add_finviz_info(my_sheets)
 
-    write_sheet(my_sheets, "etfs_holdings.xlsx")
+    write_sheet_etf(my_sheets, "etfs_holdings.xlsx")
 
 
-def spb_stocks():
-    stocks = get_stocks()
-    get_finviz_info_spb(stocks['CNK'].ticker)
+def margin_stocks(f_path):
+    stocks = list(get_stocks().values())
+    check_liquidity(stocks)
+    stocks = [s for s in stocks if s.risk[0] < 25]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(stock_finviz_info, s) for s in stocks}
+
+    title = ['Ticker', 'Short', 'Price', 'ATR', 'ATR to Price', 'Beta', 'Long risk', 'Short risk',
+             'Avg Volume', 'Sector', 'Industry']
+    rows = [[s.ticker, s.short, s.price, s.atr, s.atr_to_price, s.beta,
+             s.risk[0], s.risk[1], s.avg_volume, s.sector, s.industry]
+            for s in stocks if s.price > 1]
+    col_num = len(title)
+    wb = Workbook()
+    ws = wb.active
+
+    for cal in range(col_num):
+        ws.cell(column=cal+1, row=1, value=title[cal])
+
+    for row in range(len(rows)):
+        for cal in range(col_num):
+            ws.cell(column=cal+1, row=row+2, value=rows[row][cal])
+
+    wb.save(f_path)
+
+def spb_stocks(f_path):
+    tickers = list(get_stocks().keys())
+    sheet = Sheet()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(get_finviz_info_spb, ticker) for ticker in tickers}
+        for f in concurrent.futures.as_completed(futures):
+            sheet.rows.append(f.result())
+
+    wb = Workbook()
+    ws = wb.active
+    col_number = len(sheet.spb_title)
+
+    for cal in range(col_number):
+        ws.cell(column=cal+1, row=1, value=sheet.spb_title[cal])
+
+    for row in range(len(sheet.rows)):
+        for cal in range(col_number):
+            ws.cell(column=cal+1, row=row+2, value=sheet.rows[row][cal])
+
+    wb.save(f_path)
 
 
 def main():
     # etf_stocks()
-    spb_stocks()
+    # spb_stocks('E:\Document\spb_stocks.xlsx')
+    margin_stocks('E:\Document\margin_stocks.xlsx')
 
 
 if __name__ == '__main__':
