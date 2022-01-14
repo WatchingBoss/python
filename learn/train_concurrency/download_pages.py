@@ -39,8 +39,9 @@ async def download_all_pages(urls, parse_func=None):
         if parse_func is not None:
             return await asyncio.gather(*(download_and_parse(session, url, parse_func) for url in urls))
         else:
-            # tasks = [asyncio.ensure_future(download_page(session, url)) for url in urls]
-            return await asyncio.gather(*(download_page(session, url) for url in urls))
+            tasks = [asyncio.ensure_future(download_page(session, url)) for url in urls]
+            # return await asyncio.gather(*(download_page(session, url) for url in urls))
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def get_links():
@@ -56,12 +57,13 @@ def get_links():
 
 
 def main():
-    links = get_links()
-    # links = [
-    #     'https://fgiesen.wordpress.com/2021/10/04/gpu-bcn-decoding/',
-    #     'https://fgiesen.wordpress.com/2019/07/20/frequency-responses-of-half-pel-filters/',
-    #     'https://fgiesen.wordpress.com/2018/12/10/rate-distortion-optimization/'
-    # ]
+    asyncio.set_event_loop(asyncio.ProactorEventLoop())
+    # links = get_links()
+    links = [
+        'https://fgiesen.wordpress.com/2021/10/04/gpu-bcn-decoding/',
+        'https://fgiesen.wordpress.com/2019/07/20/frequency-responses-of-half-pel-filters/',
+        'https://fgiesen.wordpress.com/2018/12/10/rate-distortion-optimization/'
+    ]
     asyncio.get_event_loop().run_until_complete(download_all_pages(links))
 
 
