@@ -4,7 +4,7 @@ from fake_useragent import UserAgent
 import cloudscraper
 from models import Liquidity
 
-HEADER = UserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36')
+HEADER = {'User-Agent': str(UserAgent().chrome)}
 
 
 def check_liquidity(stocks):
@@ -80,8 +80,9 @@ def check_hash(s):
 
 
 def get_soup(url):
-    r = requests.get(url, headers=HEADER)
-    return BeautifulSoup(r.content, 'lxml')
+    scraper = cloudscraper.create_scraper()
+    content = scraper.get(url).text
+    return BeautifulSoup(content, 'lxml')
 
 
 def get_finviz_table(soup: BeautifulSoup):
