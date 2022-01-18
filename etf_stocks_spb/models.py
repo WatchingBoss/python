@@ -1,23 +1,35 @@
-class Stock:
+class Instrument:
     def __init__(self, ticker, isin=str()):
         self.ticker = ticker
         self.isin = isin
-        self.short = False
-        self.risk = [float(), float()]
-        self.atr = int()
-        self.price = int()
-        self.beta = int()
-        self.atr_to_price = int()
-        self.sector = str()
-        self.industry = str()
-        self.avg_volume = int()
+
+
+class Stock(Instrument):
+    pass
+
+
+class Bond(Instrument):
+    pass
+
+
+class Portfolio:
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+        self.rub = list()
+        self.usd = list()
+        self.bond = list()
+
+
+# self.etf_title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
+# self.spb_title = ['Ticker', 'Name', 'Sector', 'Industry', 'Country']
+# self.portfolio_title = ['Ticker', 'Name', 'Currency', 'Price', 'Balance', 'Sum', 'Yield', 'Change']
 
 
 class Sheet:
-    def __init__(self, name='default'):
+    def __init__(self, name='default', title=None):
         self.name = name
-        self.etf_title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
-        self.spb_title = ['Ticker', 'Name', 'Sector', 'Industry', 'Country']
+        self.title = title
         self.rows = []
 
 
