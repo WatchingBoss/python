@@ -16,9 +16,6 @@ class Portfolio:
     def __init__(self, id, name):
         self.id = id
         self.name = name
-        self.rub = list()
-        self.usd = list()
-        self.bond = list()
 
 
 # self.etf_title = ['Ticker', 'Weight', 'SPB', 'Short', 'ATR', 'Beta', 'Price', 'Avg volume']
