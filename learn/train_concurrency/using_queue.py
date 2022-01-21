@@ -45,6 +45,6 @@ async def main(nprod: int, ncon: int):
 if __name__ == "__main__":
     random.seed(time.time())
     start = time.perf_counter()
-    asyncio.run(main(2, 6))
+    asyncio.run(main(2, 4))
     elapsed = time.perf_counter() - start
     print(f"Finished in {elapsed:.3f} seconds")

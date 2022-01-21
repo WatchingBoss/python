@@ -57,17 +57,16 @@ def get_links():
 
 def main():
     asyncio.set_event_loop(asyncio.ProactorEventLoop())
-    # links = get_links()
-    links = [
-        'https://fgiesen.wordpress.com/2021/10/04/gpu-bcn-decoding/',
-        'https://fgiesen.wordpress.com/2019/07/20/frequency-responses-of-half-pel-filters/',
-        'https://fgiesen.wordpress.com/2018/12/10/rate-distortion-optimization/'
-    ]
+    links = get_links()
+    # links = [
+    #     'https://fgiesen.wordpress.com/2021/10/04/gpu-bcn-decoding/',
+    #     'https://fgiesen.wordpress.com/2019/07/20/frequency-responses-of-half-pel-filters/',
+    #     'https://fgiesen.wordpress.com/2018/12/10/rate-distortion-optimization/'
+    # ]
     asyncio.get_event_loop().run_until_complete(download_all_pages(links))
 
 
 if __name__ == '__main__':
-
     start_time = time.time()
 
     main()
