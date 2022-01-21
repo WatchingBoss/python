@@ -3,3 +3,5 @@ nomy/
 
 .idea
 *.xlsx
+learn/train_concurrency/urls.txt
+learn/train_concurrency/result.txt
