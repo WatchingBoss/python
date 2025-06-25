@@ -1,0 +1,12 @@
+[project]
+name = "memorise_words"
+version = "0.1.0"
+description = "A word memorization application"
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
