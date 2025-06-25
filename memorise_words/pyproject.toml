@@ -3,19 +3,6 @@ name = "memorise_words"
 version = "0.1.0"
 description = "A word memorization application"
 requires-python = ">=3.12"
-dependencies = [
-    "flet==0.28.3",
-    "pydantic==2.11.7",
-    "annotated-types==0.7.0", # pydantic dependency
-    "pydantic-core==2.33.2", # pydantic dependency
-    "typing-extensions==4.14.0" # pydantic dependency
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest==8.4.1",
-    "ruff==0.12.0"
-]
 
 [build-system]
 requires = ["hatchling"]
