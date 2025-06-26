@@ -1,63 +1,79 @@
 import flet as ft
-import sqlite3
 import random
+from sqlalchemy import create_engine, Column, Integer, String, func
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import IntegrityError
+
+# SQLAlchemy setup
+Base = declarative_base()
+engine = create_engine(f"sqlite:///memorise_words/words.db") # Ensure path is correct for where the app runs
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+class Word(Base):
+    __tablename__ = "words"
+    id = Column(Integer, primary_key=True, index=True)
+    word = Column(String, unique=True, nullable=False, index=True)
 
 class WordStore:
-    def __init__(self, db_name="words.db"):
-        self.db_name = db_name
+    def __init__(self, db_path="memorise_words/words.db"): # db_path is illustrative, engine is global
         self._create_table()
 
-    def _connect(self):
-        return sqlite3.connect(self.db_name)
-
     def _create_table(self):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS words (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    word TEXT NOT NULL UNIQUE
-                )
-            """)
-            conn.commit()
+        Base.metadata.create_all(bind=engine)
 
-    def add_word(self, word):
-        if not word:
+    def add_word(self, new_word_text):
+        if not new_word_text:
             return "Input cannot be empty."
+
+        session = SessionLocal()
         try:
-            with self._connect() as conn:
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO words (word) VALUES (?)", (word,))
-                conn.commit()
-            return f"Added: {word}"
-        except sqlite3.IntegrityError:
-            return f"'{word}' already exists."
+            new_word_obj = Word(word=new_word_text)
+            session.add(new_word_obj)
+            session.commit()
+            return f"Added: {new_word_text}"
+        except IntegrityError:
+            session.rollback()
+            return f"'{new_word_text}' already exists."
+        finally:
+            session.close()
 
     def get_random_word(self):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT word FROM words ORDER BY RANDOM() LIMIT 1")
-            row = cursor.fetchone()
-            return row[0] if row else None
+        session = SessionLocal()
+        try:
+            # For SQLite, func.random() or func.rand() depending on SQLAlchemy version and dialect specifics
+            # For PostgreSQL use func.random()
+            # For MySQL use func.rand()
+            # SQLite uses RANDOM()
+            random_word_obj = session.query(Word).order_by(func.random()).first()
+            return random_word_obj.word if random_word_obj else None
+        finally:
+            session.close()
 
     def get_all_words(self):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT word FROM words ORDER BY word")
-            return [row[0] for row in cursor.fetchall()]
+        session = SessionLocal()
+        try:
+            all_word_objects = session.query(Word).order_by(Word.word).all()
+            return [word_obj.word for word_obj in all_word_objects]
+        finally:
+            session.close()
 
     def clear_all_words(self):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM words")
-            conn.commit()
-        return "All words cleared."
+        session = SessionLocal()
+        try:
+            session.query(Word).delete()
+            session.commit()
+            return "All words cleared."
+        except Exception as e:
+            session.rollback()
+            return f"Error clearing words: {e}"
+        finally:
+            session.close()
 
 def main(page: ft.Page):
     page.title = "Memorise Words"
     page.vertical_alignment = ft.MainAxisAlignment.START
 
-    word_store = WordStore("memorise_words/words.db")
+    word_store = WordStore() # db_path no longer needed as engine is global
 
     output_text = ft.Text(value="Welcome! Add or find words.", size=16)
     new_word_input = ft.TextField(label="Enter new word", width=300)
